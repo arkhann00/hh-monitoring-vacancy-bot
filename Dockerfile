@@ -10,7 +10,7 @@ RUN useradd --create-home --uid 10001 monitor \
     && mkdir /data \
     && chown monitor:monitor /data
 
-COPY --chown=monitor:monitor hh_telegram_monitor.py /app/main.py
+COPY --chown=monitor:monitor main.py /app/main.py
 
 USER monitor
 
