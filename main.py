@@ -28,7 +28,8 @@ from urllib.request import Request, urlopen
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parent
-STATE_FILE = ROOT / "state.json"
+# Docker sets STATE_FILE=/data/state.json, mounted as a persistent volume.
+STATE_FILE = Path(os.environ.get("STATE_FILE", str(ROOT / "state.json")))
 ENV_FILE = ROOT / ".env"
 USER_AGENT = "HHVacancyMonitor/1.0 (personal vacancy alerts)"
 CLIENT_ONLY_HH_PARAMETERS = {
@@ -91,14 +92,15 @@ def request_json(
     request = Request(url, data=data, method=method, headers={
         **headers,
     })
+    safe_url = re.sub(r"(https://api\.telegram\.org/bot)[^/]+", r"\1***", url)
     try:
         with urlopen(request, timeout=30) as response:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         details = error.read().decode("utf-8", errors="replace")[:500]
-        raise RuntimeError(f"HTTP {error.code} from {url}: {details}") from error
+        raise RuntimeError(f"HTTP {error.code} from {safe_url}: {details}") from error
     except URLError as error:
-        raise RuntimeError(f"Network error while calling {url}: {error.reason}") from error
+        raise RuntimeError(f"Network error while calling {safe_url}: {error.reason}") from error
 
 
 def hh_rss_url(search_url: str) -> str:
